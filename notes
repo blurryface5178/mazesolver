@@ -12,3 +12,11 @@ for each point
 define new point with coordinate (x-1, y), (x+1,y) and (x,y+1)
 if value at point == 0, delete element
 else store as new x point
+------------------------------------------------------------
+  ___
+__|1|__
+|0|_|2|
+
+--> childof 0 = should have childof 0 and 1, next = x-1,y and x,y-1
+--> childof 1 = should have childof 0,1 and 2, next = all
+--> childof 2 = should have childof 1 and 2, next = x,y-1 and x+1,y
