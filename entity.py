@@ -1,5 +1,6 @@
 import cv2
-radius = 1
+
+w = 1
 
 class entity:
     x = 0
@@ -12,4 +13,4 @@ class entity:
         self.childof = childof
 
     def draw(self,img):
-        return cv2.circle(img,(self.x,self.y),radius,127,-1)
+        return cv2.rectangle(img,(self.x-int(w/2),self.y-int(w/2)),(self.x+int(w/2),self.y+int(w/2)),127,1)
