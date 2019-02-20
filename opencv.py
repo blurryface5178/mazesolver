@@ -2,8 +2,11 @@ import cv2
 import numpy as np
 import entity
 import time
+import os
 
 entity = entity.entity
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 w = 6
 agents = []
@@ -94,7 +97,7 @@ if __name__ == '__main__':
 
             itr =  itr+1
             grid = current.draw(zero)
-            cv2.imwrite('Image'+str(int(itr))+'.jpg',grid)
+            cv2.imwrite(os.path.join(dir_path,'Floodfill/Image'+str(int(itr))+'.jpg'),grid)
 
     for agent in agents:
         if agent.visited == True:
@@ -116,7 +119,7 @@ if __name__ == '__main__':
         print(current.x,current.y,nextindex)
 
         result = current.draw(result)
-        cv2.imwrite('Result'+str(int(resultlength))+'.jpg',result)
+        cv2.imwrite(os.path.join(dir_path,'Result/Image'+str(int(itr))+'.jpg'),result)
 
         if(current.x == startPoint[0] and current.y  == startPoint[1]):
                 print('reached end')
