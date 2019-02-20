@@ -1,71 +1,145 @@
 import cv2
 import numpy as np
 import entity
+import time
 
 entity = entity.entity
 
-w = 1
+w = 6
 agents = []
-reachedend = 0
+path = []
+result = []
+kernel = np.ones((3,3), np.uint8)
 
 filename = 'Maze.png'
 img = cv2.imread(filename)
-img = cv2.resize(img, (256,256))
+img = cv2.resize(img, (216,216))
+
 rows, cols, _ = img.shape
-gray = np.zeros((rows,cols),dtype=np.uint8)
+steps = int(rows/w)
+
+startPoint = [int((cols/2)/w),int((rows/w)-1)]
+endPoint = [int((cols/2)/w),0]
+
+grid = np.zeros((rows,cols),dtype=np.uint8)
+zero = np.zeros((rows,cols),dtype=np.uint8)
+result = np.zeros((rows,cols),dtype=np.uint8)
 
 def collision(x,y):
-    min_x = x-w
-    max_x = x+w
-    min_y = y-w
-    max_y = y+w
+    minX, minY = x*w,y*w
+    for j in range(minY,minY+w):
+        for i in range(minX,minX+w):
+            if (gray[j,i]==0):
+                return True
+            else:
+                return False
 
-    print(x,y)
-    if (gray[min_x,min_y]==0 or gray[max_x,min_y]==0):
-        if(gray[min_x,max_y]==0 or gray[max_x,max_y]==0):
-            return True
-
-def creatNewAgent(x,y,childof):
-#    if not collision(x,y):
-        newAgent = entity(x,y,childof)
-        agents.append(newAgent)
-
-
-def clearStack(index):
-    for i in range(index,len(agents)-1):
-        agents[i] = agents[i+1]
+def creatNewAgent(x,y):
+    newAgent = entity(x,y)
+    if not collision(x,y):
+        newAgent.fill = 127
+        newAgent.isWall = False
+    agents.append(newAgent)
 
 if __name__ == '__main__':
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    _, gray = cv2.threshold(gray, 250, 255, cv2.THRESH_BINARY)
-    zero = np.zeros((rows,cols),dtype=np.uint8)
-    cv2.imshow('dst',img)
+    _, gray = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+    gray = cv2.erode(gray,kernel,iterations=2)
+    #gray = cv2.dilate(gray,kernel, iterations=4)
+    inverted = cv2.bitwise_not(gray)
+    for j in range(steps):
+        for i in range(steps):
+            creatNewAgent(i,j)
 
-    creatNewAgent(int(rows/2),int(cols)-2,1)
+    max_index = len(agents)
+    itr = 0
 
-    for index,agent in enumerate(agents):
-        if (reachedend == 0):
-            if(agent.x>0 and agent.x<rows and agent.y>0 and agent.y<cols):
-                if not collision(agent.x, agent.y):
-                    creatNewAgent(agent.x,agent.y-w,1)
-                    if(agent.childof == 0):
-                        creatNewAgent(agent.x-w,agent.y,0)
-                    elif(agent.childof == 2):
-                        creatNewAgent(agent.x+w,agent.y,2)
-                    elif(agent.childof == 1):
-                        creatNewAgent(agent.x-w,agent.y,0)
-                        creatNewAgent(agent.x+w,agent.y,2)
+    path.append(agents[startPoint[0]+startPoint[1]*(steps)])
+    while(path!=[]):
+        current = path.pop(0)
+        if(current.visited == False):
+            current.visited = True
+            print('c',current.x,current.y,current.x+current.y*(steps))
 
-                    zero = agent.draw(zero)
-                else:
-                    clearStack(index)
+            if(current.x+(current.y-1)*(steps) > 0):
+                top = agents[current.x+(current.y-1)*(steps)]
+                if(top.isWall == False and top.visited == False):
+                    top.childof = 1
+                    path.append(top)
+                    print('t',top.x, top.y,top.x+top.y*steps)
 
-        if (agent.x==int(rows/2) and agent.y==0):
-            reachedend = 1
-            print('haha')
+            if(current.x+current.y*(steps)+1 < max_index):
+                right = agents[(current.x+1)+current.y*(steps)]
+                if(right.isWall == False and right.visited == False):
+                    right.childof = 2
+                    path.append(right)
+                    print('r',right.x, right.y,right.x+right.y*steps)
 
-    cv2.imshow('zero',zero)
-                #clearStack()
+            if(current.x+current.y*(steps)-1 > 0):
+                left = agents[(current.x-1)+current.y*(steps)]
+                if(left.isWall == False and left.visited == False):
+                    left.childof = 0
+                    path.append(left)
+                    print('l',left.x, left.y, left.x+left.y*steps)
+
+            if(current.x+(current.y+1)*(steps)< rows):
+                bottom = agents[current.x+(current.y+1)*(steps)]
+                if(bottom.isWall == False and bottom.visited == False):
+                    bottom.childof = 3
+                    path.append(bottom)
+                    print('b',bottom.x, bottom.y,bottom.x+bottom.y*steps)
+
+            if(current.x == endPoint[0] and current.y  == endPoint[1]):
+                    break
+
+            itr =  itr+1
+            grid = current.draw(zero)
+            cv2.imwrite('Image'+str(int(itr))+'.jpg',grid)
+
+    for agent in agents:
+        if agent.visited == True:
+             grid = agent.draw(inverted)
+
+# cv2.imshow('Zero',zero)
+    cv2.imshow('Grid',grid)
+    print('itr =',itr)
+
+    print('finding childs now')
+
+    path = []
+    path.append(current)
+
+    resultlength = 0
+    while(path!=[]):
+        current = path.pop(0)
+        nextindex = current.childof
+        print(current.x,current.y,nextindex)
+
+        result = current.draw(result)
+        cv2.imwrite('Result'+str(int(resultlength))+'.jpg',result)
+
+        if(current.x == startPoint[0] and current.y  == startPoint[1]):
+                print('reached end')
+                break
+
+        if(nextindex == 0):
+            nextNode = agents[(current.x+1)+current.y*(steps)]
+        elif(nextindex == 1):
+            nextNode = agents[current.x+(current.y+1)*(steps)]
+        elif(nextindex == 2):
+            nextNode = agents[(current.x-1)+current.y*(steps)]
+        elif(nextindex == 3):
+            nextNode = agents[current.x+(current.y-1)*(steps)]
+
+        path.append(nextNode)
+        resultlength = resultlength+1
+        #result.append(nextNode)
+
+
+    cv2.imshow('Result',result)
+    print(resultlength)
+        #checkNeighborEmpty()
+        #expandToEmptyNeighbor()
 
     if cv2.waitKey(0) & 0xff == 27:
         cv2.destroyAllWindows()

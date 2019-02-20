@@ -1,16 +1,17 @@
 import cv2
 
-w = 1
+w = 6
 
 class entity:
-    x = 0
-    y = 0
-    childof = 0
+    x,y = 0,0
+    childof = 1
+    visited = False
+    fill = 255
+    isWall = True
 
-    def __init__(self,x,y,childof):
+    def __init__(self,x,y):
         self.x = x
         self.y = y
-        self.childof = childof
 
     def draw(self,img):
-        return cv2.rectangle(img,(self.x-int(w/2),self.y-int(w/2)),(self.x+int(w/2),self.y+int(w/2)),127,1)
+        return cv2.rectangle(img,(self.x*w,self.y*w),(self.x*w+w,self.y*w+w),self.fill)
