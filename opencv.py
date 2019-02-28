@@ -26,7 +26,7 @@ endPoint = [int((cols/2)/w),0]
 
 grid = np.zeros((rows,cols),dtype=np.uint8)
 zero = np.zeros((rows,cols),dtype=np.uint8)
-result = np.zeros((rows,cols),dtype=np.uint8)
+results = np.zeros((rows,cols),dtype=np.uint8)
 
 def collision(x,y):
     minX, minY = x*w,y*w
@@ -47,7 +47,7 @@ def creatNewAgent(x,y):
 if __name__ == '__main__':
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     _, gray = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
-    gray = cv2.erode(gray,kernel,iterations=2)
+    #gray = cv2.erode(gray,kernel,iterations=2)
     #gray = cv2.dilate(gray,kernel, iterations=4)
     inverted = cv2.bitwise_not(gray)
     for j in range(steps):
@@ -85,7 +85,7 @@ if __name__ == '__main__':
                     path.append(left)
                     print('l',left.x, left.y, left.x+left.y*steps)
 
-            if(current.x+(current.y+1)*(steps)< rows):
+            if(current.x+(current.y+1)*(steps)< max_index):
                 bottom = agents[current.x+(current.y+1)*(steps)]
                 if(bottom.isWall == False and bottom.visited == False):
                     bottom.childof = 3
@@ -111,15 +111,30 @@ if __name__ == '__main__':
 
     path = []
     path.append(current)
+    prev_index = current.childof
 
     resultlength = 0
     while(path!=[]):
         current = path.pop(0)
         nextindex = current.childof
-        print(current.x,current.y,nextindex)
+        #print(current.x,current.y,nextindex)
 
-        result = current.draw(result)
-        cv2.imwrite(os.path.join(dir_path,'Result/Image'+str(int(itr))+'.jpg'),result)
+        if(prev_index != nextindex):
+            if(prev_index == 0):
+                direction = 'W'
+            elif(prev_index == 1):
+                direction = 'N'
+            elif(prev_index == 2):
+                direction = 'E'
+            elif(prev_index == 3):
+                direction = 'S'
+
+            prev_index = nextindex
+
+            result.append(direction)
+
+        results = current.draw(results)
+        cv2.imwrite(os.path.join(dir_path,'Result/Image'+str(int(resultlength))+'.jpg'),results)
 
         if(current.x == startPoint[0] and current.y  == startPoint[1]):
                 print('reached end')
@@ -136,13 +151,13 @@ if __name__ == '__main__':
 
         path.append(nextNode)
         resultlength = resultlength+1
-        #result.append(nextNode)
 
 
-    cv2.imshow('Result',result)
-    print(resultlength)
-        #checkNeighborEmpty()
-        #expandToEmptyNeighbor()
+    cv2.imshow('Result',results)
+    print('length of path',resultlength)
+    result.reverse()
+    result.pop(0)
+    print(result)
 
     if cv2.waitKey(0) & 0xff == 27:
         cv2.destroyAllWindows()
