@@ -1,40 +1,34 @@
 import cv2
 import numpy as np
+import serial
 
 import os
+#import time
 
-import QR
 import entity
+import QR
 import constants as CONST
 
 entity = entity.entity
+port = "/dev/ttyACM0"
+s1 = serial.Serial(port,9600)
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
+dir_path = '/home/pi/Desktop/mazesolver-master/Images/'
 
 agents = []
 path = []
 result = []
+show = []
 kernel = np.ones((5,5), np.uint8)
 startPoint,endPoint = [],[]
 
-url = "http://10.99.99.26:8080/photoaf.jpg"  # If we use multiple IP camera mobile
-imgPath = urllib.request.urlopen(url)
-imgNp = np.array(bytearray(imgPath.read()), dtype=np.uint8)
-img = cv2.imdecode(imgNp, -1)
-#cv2.imwrite('Maze3D_Test.jpg', img)
-cv2.imshow("Maze",img)
-
-saved_path = os.path.join(dir_path,'/Images')
-cv2.imwrite(os.path.join(saved_path, 'MazePhoto.jpg'), img)
-if ord('q') == cv2.waitKey(1):                  # To quit application by pressing q
-    exit(0)
-
-#filename = 'Maze2.png'
-#img = cv2.imread(filename)
+filename = 'Maze3D_Test.jpg'
+img = cv2.imread(os.path.join(dir_path,filename))
 
 rows, cols, _ = img.shape
 
 image = img
+img =  cv2.blur(img,(5,5))
 img = cv2.resize(img,(int(cols/CONST.h),int(rows/CONST.h)))
 
 def definePoints(text,x,w,y,h):
@@ -54,11 +48,6 @@ def definePoints(text,x,w,y,h):
 
 data = QR.decodeQR(image)
 
-img = cv2.resize(img,(int(cols/CONST.h),int(rows/CONST.h)))
-
-cv2.imshow("Image",image)
-cv2.waitKey(0)
-
 [text1,(x1,w1),(y1,h1)] = data[0]
 [text2,(x2,w2),(y2,h2)] = data[1]
 
@@ -70,6 +59,12 @@ definePoints(text2,x2,w2,y2,h2)
 
 cv2.imshow("Replacement",img)
 cv2.waitKey(0)
+
+rows, cols, _ = img.shape
+stepx = int(rows/CONST.w)
+stepy = int(cols/CONST.w)
+print("Rows and Cols",rows,cols)
+print("Stepx and Stepy",stepx,stepy)
 
 grid = np.zeros((rows,cols),dtype=np.uint8)
 zero = np.zeros((rows,cols),dtype=np.uint8)
@@ -94,9 +89,9 @@ def creatNewAgent(x,y):
 if __name__ == '__main__':
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
-    _, gray = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY)
-    gray = cv2.erode(gray,kernel,iterations=1)
-    gray = cv2.dilate(gray,kernel, iterations=1)
+    _, gray = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY)
+    gray = cv2.erode(gray,kernel,iterations=2)
+ #   gray = cv2.dilate(gray,kernel, iterations=1)
     inverted = cv2.bitwise_not(gray)
 
     cv2.imshow('Grayed Image',gray)
@@ -173,17 +168,18 @@ if __name__ == '__main__':
 
         if(prev_index != nextindex):
             if(prev_index == 0):
-                direction = 'W'
+                print_direction = 'W'
             elif(prev_index == 1):
-                direction = 'N'
+                print_direction = 'N'
             elif(prev_index == 2):
-                direction = 'E'
+                print_direction = 'E'
             elif(prev_index == 3):
-                direction = 'S'
-
+                print_direction = 'S'
+            direction = prev_index
             prev_index = nextindex
 
-            result.append(direction)
+            result.append(str(direction))
+            show.append(print_direction)
 
         results = current.draw(results)
 #        cv2.imwrite(os.path.join(dir_path,'Result/Image'+str(int(resultlength))+'.jpg'),results)
@@ -206,10 +202,16 @@ if __name__ == '__main__':
 
 
     cv2.imshow('Result',results)
-    print('length of path',resultlength)
     result.reverse()
-    result.pop(0)
-    print(result)
+    show.reverse()
+
+    to_send = ''.join(result)
+    to_send = to_send+'6'
+
+    print(to_send)
+
+    print(show)
+    s1.write(to_send.encode())
 
     if cv2.waitKey(0) & 0xff == 27:
         cv2.destroyAllWindows()

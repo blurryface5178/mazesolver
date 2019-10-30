@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import serial
 
 import urllib.request
 import urllib.error
@@ -12,6 +13,8 @@ import QR
 import constants as CONST
 
 entity = entity.entity
+#port = "/dev/ttyACM0"
+#s1 = serial.Serial(port,9600)
 
 #dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -39,22 +42,8 @@ if ord('q') == cv2.waitKey(1):                  # To quit application by pressin
 rows, cols, _ = img.shape
 
 image = img
+#img =  cv2.blur(img,(3,3))
 img = cv2.resize(img,(int(cols/CONST.h),int(rows/CONST.h)))
-
-def definePoints(text,x,w,y,h):
-	x = int(x/CONST.h)
-	y = int(y/CONST.h)
-	w = int(w/CONST.h)
-	h = int(h/CONST.h)
-	
-	if(text == 'Start'):
-		startPoint.append(int((x+w/2)/(CONST.w)))
-		startPoint.append(int((y-h/2)/(CONST.w)))
-	elif(text == 'End'):
-		endPoint.append(int((x+w/2)/(CONST.w)))
-		endPoint.append(int((y-h/2)/(CONST.w)))
-
-	cv2.rectangle(img,(x,y),(x+w,y+h),(255,255,255),-1)
 
 rows, cols, _ = img.shape
 stepx = int(rows/CONST.w)
@@ -103,10 +92,11 @@ def creatNewAgent(x,y):
 if __name__ == '__main__':
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
-    _, gray = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY)
+    _, gray = cv2.threshold(gray, 75, 255, cv2.THRESH_BINARY)
     gray = cv2.erode(gray,kernel,iterations=1)
-    gray = cv2.dilate(gray,kernel, iterations=1)
+   # gray = cv2.dilate(gray,kernel, iterations=1)
     inverted = cv2.bitwise_not(gray)
+    base = inverted
 
     cv2.imshow('Grayed Image',gray)
 
@@ -181,18 +171,18 @@ if __name__ == '__main__':
         #print(current.x,current.y,nextindex)
 
         if(prev_index != nextindex):
-            if(prev_index == 0):
-                direction = 'W'
-            elif(prev_index == 1):
-                direction = 'N'
-            elif(prev_index == 2):
-                direction = 'E'
-            elif(prev_index == 3):
-                direction = 'S'
-
+#            if(prev_index == 0):
+#                direction = 'W'
+#            elif(prev_index == 1):
+#                direction = 'N'
+#            elif(prev_index == 2):
+#                direction = 'E'
+#            elif(prev_index == 3):
+#                direction = 'S'
+            direction = prev_index
             prev_index = nextindex
 
-            result.append(direction)
+            result.append(str(direction))
 
         results = current.draw(results)
 #        cv2.imwrite(os.path.join(dir_path,'Result/Image'+str(int(resultlength))+'.jpg'),results)
@@ -213,12 +203,17 @@ if __name__ == '__main__':
         path.append(nextNode)
         resultlength = resultlength+1
 
-
+#    results = cv2.bitwise_or(results, base)
     cv2.imshow('Result',results)
-    print('length of path',resultlength)
     result.reverse()
-    result.pop(0)
-    print(result)
+
+#    to_send = ''.join(result)
+#    to_send = to_send+'6'
+
+#    print(to_send)
+
+#    print(result)
+#    s1.write(to_send.encode())
 
     if cv2.waitKey(0) & 0xff == 27:
         cv2.destroyAllWindows()
